@@ -1,5 +1,5 @@
 import csv
-
+import re
 
 def update_employee_manually(action):
     existing_list = read_existing_file()
@@ -24,16 +24,18 @@ def read_existing_file():
     with open("full employee list.csv", 'r', newline="") as to_list:
         reader = csv.reader(to_list)
         next(reader)
-        for row in reader:
-            existing_employee_list.append(row)
+        [existing_employee_list.append(row) for row in reader]
     return existing_employee_list
 
 
 def add_employee_manually(user_input, existing_list):
     to_list = []
-    for each in existing_list:
-        to_list.append(each)
-    to_list.append(user_input)
+    [to_list.append(each) for each in existing_list]
+    if user_input[0] not in existing_list[0]:
+        to_list.append(user_input)
+    else:
+        print("Employee with this id is already in the list.")
+        exit(0)
     return to_list
 
 
@@ -46,10 +48,12 @@ def write_to_list(to_list):
 
 def delete_employee_manually(user_input, existing_list):
     to_list = []
-    for each in existing_list:
-        to_list.append(each)
-        if user_input in to_list:
-            to_list.remove(each)
+    [to_list.append(each) for each in existing_list]
+    [to_list.remove(each) for each in to_list if user_input in to_list]
+    # for each in existing_list:
+    #     to_list.append(each)
+    #     if user_input in to_list:
+    #         to_list.remove(each)
     return to_list
 
 
@@ -103,7 +107,8 @@ def _phone_input_error_handle():
     while flag:
         try:
             phone_input = input("Enter phone number: ").strip()
-            assert phone_input.isnumeric()
+            check_number = re.search(r'[\d-]+\d$', phone_input)
+            assert check_number
             flag = False
         except AssertionError:
             print("Please enter numbers only")

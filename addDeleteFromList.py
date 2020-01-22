@@ -1,13 +1,19 @@
 import csv
+import pandas as pd
+import os
+import re
 
 
-def update_employee_from_file(action):
+def update_employee_from_file(action, path):
+    if not os.path.isfile(path):
+        print("File not found or access denied.")
+        exit(0)
+    file_to_read_from(path)
     from_list = get_data_from_list()
     to_list = retrieve_existing_data()
     updated_employee_list = []
     count_updated_records = 0
-    for each in to_list:
-        updated_employee_list.append(each)
+    [updated_employee_list.append(each) for each in to_list]
     if action == "add":
         write_to_file(add_employee_from_list(from_list,
                                              updated_employee_list,
@@ -18,16 +24,44 @@ def update_employee_from_file(action):
                                                 count_updated_records))
 
 
+def file_to_read_from(path):
+    if '.xlsx' in path:
+        read_excel(path)
+    elif '.csv' in path:
+        read_csv(path)
+    else:
+        print("Can not recognize file format or file doesn't exists.")
+        exit(0)
+
+
+def read_excel(path):
+    file_to_read = pd.read_excel(path)
+    file_to_read.to_csv("HelperFile.csv", index=None)
+
+
+def read_csv(path):
+    with open(path, 'r', newline="") as file_to_read:
+        with open("HelperFile.csv", 'w', newline="")as input_file:
+            reader = csv.reader(file_to_read)
+            writer = csv.writer(input_file)
+            writer.writerows(reader)
+
+
 def add_employee_from_list(from_list,
                            updated_employee_list,
                            count_updated_records):
     for employee in from_list:
         if employee not in updated_employee_list:
-            updated_employee_list.append(employee)
-            count_updated_records += 1
+            id = employee[0]
             name = employee[1]
-            print("{} was added to the list."
-                  .format(name.title()))
+            if id in from_list[0]:
+                print("Employee with id {} is already in the list and "
+                      "was not added again.".format(id))
+            else:
+                updated_employee_list.append(employee)
+                count_updated_records += 1
+                print("{} was added to the list."
+                      .format(name.title()))
     print_add_results(count_updated_records)
     return updated_employee_list
 
@@ -48,11 +82,10 @@ def delete_employee_from_list(from_list,
 
 def get_data_from_list():
     from_list = []
-    with open("employee list.csv", 'r') as fromFile:
+    with open("HelperFile.csv", 'r') as fromFile:
         reader = csv.reader(fromFile)
         next(reader)
-        for row in reader:
-            from_list.append(row)
+        [from_list.append(row) for row in reader]
         if not from_list:
             print("Your list is empty.")
             exit(0)
@@ -75,11 +108,8 @@ def retrieve_existing_data():
     with open("full employee list.csv", 'r') as toFile:
         reader = csv.reader(toFile)
         next(reader)
-        for row in reader:
-            to_list.append(row)
-    for each in to_list:
-        if not each:
-            to_list.remove(each)
+        [to_list.append(row) for row in reader]
+    [to_list.remove(each) for each in to_list if not each]
     return to_list
 
 
@@ -163,7 +193,8 @@ def _phone_input_from_list_error_handle(employee_to_add):
             try:
                 phone_input = each[2]
                 phone_input = phone_input.strip()
-                assert phone_input.isnumeric()
+                check_number = re.search(r'[\d-]+\d$', phone_input)
+                assert check_number
                 flag = False
             except AssertionError:
                 print("Phone number is not correct. Must be numbers only.")
